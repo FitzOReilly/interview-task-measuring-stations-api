@@ -29,7 +29,9 @@ app = FastAPI()
 
 
 @app.put("/measuring-stations/{station_id}", status_code=201)
-async def create_measuring_station(station_id: str, address: str, response: Response):
+async def create_measuring_station(
+    station_id: str, address: str, response: Response
+) -> str:
     """Creates a new measuring station with the given station id and address
 
     Returned status code:
@@ -40,12 +42,15 @@ async def create_measuring_station(station_id: str, address: str, response: Resp
     bucket = buckets_api.find_bucket_by_name(station_id)
     if bucket is not None:
         response.status_code = status.HTTP_400_BAD_REQUEST
-        return f"measuring station with id {station_id} already exists"
+        return f"Measuring station with id {station_id} already exists"
     buckets_api.create_bucket(bucket_name=station_id, description=address)
+    return f"Created measuring station with id {station_id}"
 
 
 @app.get("/measuring-stations/{station_id}")
-async def retrieve_measuring_station(station_id: str, response: Response):
+async def retrieve_measuring_station(
+    station_id: str, response: Response
+) -> MeasuringStation | str:
     """Retrieves a measuring station and returns its id and address
 
     Returned status code:
@@ -57,17 +62,17 @@ async def retrieve_measuring_station(station_id: str, response: Response):
     bucket = buckets_api.find_bucket_by_name(station_id)
     if bucket is None:
         response.status_code = status.HTTP_404_NOT_FOUND
-        return f"measuring station with id {station_id} not found"
+        return f"Measuring station with id {station_id} not found"
     station = {"id": bucket.name, "address": bucket.description}
     return station
 
 
 @app.put("/measuring-stations/{station_id}/sensor-data")
-async def upload_sensors_data(
+async def upload_sensor_data(
     station_id: str,
     sensor_measurements: dict[SensorId, list[Measurement]],
     response: Response,
-):
+) -> str:
     """Uploads sensor data for multiple sensors of a measuring station
 
     Returned status code:
@@ -79,7 +84,7 @@ async def upload_sensors_data(
     bucket = buckets_api.find_bucket_by_name(station_id)
     if bucket is None:
         response.status_code = status.HTTP_404_NOT_FOUND
-        return f"measuring station with id {station_id} not found"
+        return f"Measuring station with id {station_id} not found"
     write_api = client.write_api(write_options=SYNCHRONOUS)
     for sensor_id, measurements in sensor_measurements.items():
         for measurement in measurements:
@@ -89,6 +94,7 @@ async def upload_sensors_data(
                 .time(time=measurement.ts, write_precision="s")
             )
             write_api.write(bucket=station_id, org=ORG, record=point)
+    return f"Uploaded sensor data for measuring station with id {station_id}"
 
 
 @app.get("/measuring-stations/{station_id}/sensor-data/{sensor_id}")
@@ -98,7 +104,7 @@ async def retrieve_measurements(
     start: int,
     stop: int,
     response: Response,
-):
+) -> list[Measurement] | str:
     """Retrieves sensor data for a specific sensor from a station within a given
     time interval and returns it as an array of measurements
 
@@ -111,7 +117,7 @@ async def retrieve_measurements(
     bucket = buckets_api.find_bucket_by_name(station_id)
     if bucket is None:
         response.status_code = status.HTTP_404_NOT_FOUND
-        return f"measuring station with id {station_id} not found"
+        return f"Measuring station with id {station_id} not found"
     if start > stop:
         return []
     query_api = client.query_api()
