@@ -119,11 +119,17 @@ async def retrieve_measurements(
     # - `range` is exclusive, so we have to add 1 to include the stop timestamp
     # - In `map`, the timestamp is converted:
     #   RFC3339 -> unix nanosecond timestamp -> unix second timestamp
-    query = f"""from(bucket: "{station_id}")
-        |> range(start: {start}, stop: {stop + 1})
-        |> filter(fn: (r) => r._measurement == "{sensor_id}")
-        |> map(fn: (r) => ({{ts: int(v: r._time) / 1000000000, value: r._value}}))"""
-    tables = query_api.query(query, org=ORG)
+    query = """from(bucket: _station_id)
+        |> range(start: _start, stop: _stop + 1)
+        |> filter(fn: (r) => r._measurement == _sensor_id)
+        |> map(fn: (r) => ({ts: int(v: r._time) / 1000000000, value: r._value}))"""
+    params = {
+        "_station_id": station_id,
+        "_sensor_id": sensor_id,
+        "_start": start,
+        "_stop": stop,
+    }
+    tables = query_api.query(query, org=ORG, params=params)
     records = []
     for table in tables:
         records.extend(
