@@ -9,20 +9,21 @@ AUTH_TOKEN = "AUTH_TOKEN"
 URL = "http://localhost:8086"
 
 
+# Type alias for sensor id, for readability and also to make changing it easier
+type SensorId = str
+
+
 # Model for a measuring station
 class MeasuringStation(BaseModel):
     id: str
     address: str
+    sensor_ids: list[SensorId]
 
 
 # Model for a measurement that validates the value range
 class Measurement(BaseModel):
     ts: int
     value: float = Field(ge=0.0, le=100.0)
-
-
-# Type alias for sensor id, for readability and also to make changing it easier
-type SensorId = str
 
 
 app = FastAPI()
@@ -63,7 +64,26 @@ async def retrieve_measuring_station(
         if bucket is None:
             response.status_code = status.HTTP_404_NOT_FOUND
             return f"Measuring station with id {station_id} not found"
-        station = {"id": bucket.name, "address": bucket.description}
+        # Query to get the sensor ids
+        query_api = client.query_api()
+        query = """import "influxdata/influxdb/schema"
+
+            schema.measurementTagValues(
+                bucket: _station_id,
+                measurement: "Measurement",
+                tag: "sensorId",
+                start: 0,
+            )"""
+        params = {"_station_id": station_id}
+        tables = query_api.query(query, org=ORG, params=params)
+        sensor_ids = []
+        for table in tables:
+            sensor_ids.extend(record["_value"] for record in table.records)
+        station = {
+            "id": bucket.name,
+            "address": bucket.description,
+            "sensor_ids": sensor_ids,
+        }
         return station
 
 
@@ -137,12 +157,10 @@ async def retrieve_measurements(
             "_stop": stop,
         }
         tables = query_api.query(query, org=ORG, params=params)
-        records = []
+        measurements = []
         for table in tables:
-            records.extend(
-                [
-                    {"ts": record["ts"], "value": record["value"]}
-                    for record in table.records
-                ]
+            measurements.extend(
+                {"ts": record["ts"], "value": record["value"]}
+                for record in table.records
             )
-        return records
+        return measurements

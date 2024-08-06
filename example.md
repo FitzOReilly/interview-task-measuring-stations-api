@@ -17,7 +17,7 @@ curl -X 'GET' \
 ```
 Response
 ```
-{"id":"station-1","address":"Paris, France"}
+{"id":"station-1","address":"Paris, France","sensor_ids":[]}
 ```
 #### Trying to create another station with the same id causes an error
 ```
@@ -37,7 +37,7 @@ curl -X 'GET' \
 ```
 Response
 ```
-{"id":"station-1","address":"Paris, France"}
+{"id":"station-1","address":"Paris, France","sensor_ids":[]}
 ```
 #### Choose a different id for the second station
 ```
@@ -71,6 +71,16 @@ curl -X 'PUT' \
 Response
 ```
 "Uploaded sensor data for measuring station with id station-1"
+```
+#### Retrieve the station again, it now shows the sensor id
+```
+curl -X 'GET' \
+  'http://127.0.0.1:8000/measuring-stations/station-1' \
+  -H 'accept: application/json'
+```
+Response
+```
+{"id":"station-1","address":"Paris, France","sensor_ids":["sensor-1"]}
 ```
 #### Retrieve data for this sensor
 ```
@@ -176,6 +186,16 @@ curl -X 'PUT' \
 Response
 ```
 "Uploaded sensor data for measuring station with id station-1"
+```
+#### Retrieve the station again, now showing both sensor ids
+```
+curl -X 'GET' \
+  'http://127.0.0.1:8000/measuring-stations/station-1' \
+  -H 'accept: application/json'
+```
+Response
+```
+{"id":"station-1","address":"Paris, France","sensor_ids":["sensor-1","sensor-2"]}
 ```
 #### Retrieve both sensors
 ##### Sensor 1
