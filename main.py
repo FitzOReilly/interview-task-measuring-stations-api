@@ -89,7 +89,8 @@ async def upload_sensor_data(
         for sensor_id, measurements in sensor_measurements.items():
             for measurement in measurements:
                 point = (
-                    influxdb_client.Point(sensor_id)
+                    influxdb_client.Point("Measurement")
+                    .tag("sensorId", sensor_id)
                     .field("value", measurement.value)
                     .time(time=measurement.ts, write_precision="s")
                 )
@@ -127,7 +128,7 @@ async def retrieve_measurements(
         #   RFC3339 -> unix nanosecond timestamp -> unix second timestamp
         query = """from(bucket: _station_id)
             |> range(start: _start, stop: _stop + 1)
-            |> filter(fn: (r) => r._measurement == _sensor_id)
+            |> filter(fn: (r) => r.sensorId == _sensor_id)
             |> map(fn: (r) => ({ts: int(v: r._time) / 1000000000, value: r._value}))"""
         params = {
             "_station_id": station_id,
