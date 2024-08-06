@@ -6,6 +6,10 @@ This project provides a REST API to store and retrieve sensor data from multiple
 measuring stations. The REST API is implemented using FastAPI and the data is
 stored as timeseries data in an InfluxDB database.
 
+Each measuring station has an ID, an address and a list of sensors. Each sensor
+takes a measurement once per minute which has a timestamp and a value within the
+range [0, 100].
+
 ## Running the project
 After cloning the repo, go to the project directory and create a virtual
 environment for python and activate it. The commands vary depending on the

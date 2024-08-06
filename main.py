@@ -44,6 +44,8 @@ async def create_measuring_station(
         if bucket is not None:
             response.status_code = status.HTTP_400_BAD_REQUEST
             return f"Measuring station with id {station_id} already exists"
+        # Store each measuring station in a separate bucket with
+        # the station_id as bucket_name and its address as description
         buckets_api.create_bucket(bucket_name=station_id, description=address)
         return f"Created measuring station with id {station_id}"
 
@@ -76,9 +78,8 @@ async def retrieve_measuring_station(
             )"""
         params = {"_station_id": station_id}
         tables = query_api.query(query, org=ORG, params=params)
-        sensor_ids = []
-        for table in tables:
-            sensor_ids.extend(record["_value"] for record in table.records)
+        sensor_ids = [record["_value"] for table in tables for record in table.records]
+        # The id and address are the bucket's name and description
         station = {
             "id": bucket.name,
             "address": bucket.description,
@@ -157,10 +158,9 @@ async def retrieve_measurements(
             "_stop": stop,
         }
         tables = query_api.query(query, org=ORG, params=params)
-        measurements = []
-        for table in tables:
-            measurements.extend(
-                {"ts": record["ts"], "value": record["value"]}
-                for record in table.records
-            )
+        measurements = [
+            {"ts": record["ts"], "value": record["value"]}
+            for table in tables
+            for record in table.records
+        ]
         return measurements
